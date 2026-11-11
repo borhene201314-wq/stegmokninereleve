@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>e-STEG - Suivi Professionnel (Supabase Temps Réel & Persistence)</title>
+    
+    <!-- SDK Supabase Client JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        :root {
+            --steg-red: #c0392b;
+            --steg-dark-red: #962d22;
+            --steg-blue: #1b365d;
+            --steg-black: #111111;
+            --bg-light: #f4f6f9;
+            --white: #ffffff;
+            --success: #27ae60;
+            --warning: #f39c12;
+            --danger: #e74c3c;
+        }
+        * { box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg-light); margin: 0; padding: 0; color: var(--steg-black); }
+        
+        header { background: var(--steg-blue); color: var(--white); padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 5px solid var(--steg-red); box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        header h1 { margin: 0; font-size: 1.3rem; font-weight: 700; display: flex; align-items: center; gap: 12px; }
+        .steg-logo-badge { background: var(--steg-red); color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; letter-spacing: 1px; }
+
+        .container { max-width: 1600px; margin: 1.5rem auto; padding: 0 1rem; }
+        
+        .toolbar { display: flex; justify-content: space-between; align-items: center; background: var(--white); padding: 1rem; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; border-left: 4px solid var(--steg-blue); }
+        .locality-tabs { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+        .tab-btn { background: #e2e8f0; border: none; padding: 6px 14px; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 0.85rem; color: var(--steg-blue); transition: all 0.2s; text-transform: uppercase; }
+        .tab-btn.active { background: var(--steg-red); color: var(--white); }
+        
+        .card { background: var(--white); padding: 1.5rem; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin-bottom: 1.5rem; border-top: 3px solid var(--steg-blue); }
+        
+        .dashboard-header { background: var(--steg-blue); color: white; padding: 10px 15px; font-weight: bold; font-size: 1rem; border-radius: 6px 6px 0 0; text-align: center; letter-spacing: 0.5px; }
+        .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 1px; background: #cbd5e1; border: 1px solid #cbd5e1; border-radius: 0 0 6px 6px; overflow: hidden; margin-bottom: 1.5rem; text-align: center; }
+        .kpi-cell { background: #f8fafc; padding: 12px 8px; }
+        .kpi-title { font-size: 0.7rem; font-weight: 700; color: var(--steg-blue); text-transform: uppercase; margin-bottom: 6px; }
+        .kpi-value { font-size: 1.1rem; font-weight: 800; color: var(--steg-black); }
+
+        .table-responsive { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; margin-top: 0.5rem; font-size: 0.85rem; text-align: left; }
+        th, td { padding: 10px 12px; border-bottom: 1px solid #e2e8f0; }
+        th { background: #f8fafc; color: var(--steg-blue); font-weight: 700; text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.05em; border-bottom: 2px solid var(--steg-blue); }
+        tr:hover { background: #f8fafc; }
+        
+        .badge { padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; display: inline-block; text-transform: uppercase; }
+        .badge.ok { background: #dcfce7; color: #166534; }
+        .badge.urgent { background: #fef9c3; color: #854d0e; }
+        .badge.depasse { background: #fee2e2; color: #991b1b; }
+        .badge.attente { background: #f1f5f9; color: #64748b; }
+        .badge.distribuee { background: #dcfce7; color: #166534; }
+        .badge.type-est { background: #e0f2fe; color: #0369a1; }
+        .badge.type-rel { background: #f3e8ff; color: #6b21a8; }
+
+        .btn { background: var(--steg-red); color: var(--white); border: none; padding: 10px 16px; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 0.9rem; transition: background 0.2s; width: 100%; }
+        .btn:hover { background: var(--steg-dark-red); }
+        .btn-secondary { background: var(--steg-blue); color: white; width: auto; }
+        .btn-success { background: #27ae60; color: white; width: auto; border: none; border-radius: 4px; font-weight: 600; }
+        .btn-success:hover { background: #219150; }
+        .btn-danger { background: #e74c3c; color: white; border: none; border-radius: 4px; width: auto; font-size: 0.75rem; padding: 4px 8px; }
+        .btn-outline { background: transparent; border: 2px dashed var(--steg-blue); color: var(--steg-blue); padding: 5px 10px; font-size: 0.8rem; width: auto; font-weight: 600; }
+        
+        .secure-box { background: #f0f4f8; border: 2px solid var(--steg-blue); border-radius: 8px; padding: 12px; margin-bottom: 12px; text-align: left; }
+        .secure-box h4 { margin: 0 0 8px 0; color: var(--steg-blue); font-size: 0.
